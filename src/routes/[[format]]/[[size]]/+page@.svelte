@@ -7,20 +7,25 @@
 
 	async function fetchProfileJson(size: string, format: string) {
 		const profileJsonResponse = await fetch(`/profiles/${size}${format}.json.gz`);
-		if (profileJsonResponse.status !== 200) {
+		if (profileJsonResponse.status !== 200 || profileJsonResponse.body === null) {
 			throw new Error(`Failed to fetch profile: ${profileJsonResponse.statusText}`);
+		}
+		if (profileJsonResponse.headers.get('Content-Type') === 'application/gzip') {
+			const decompressionStream = new DecompressionStream('gzip');
+			const decompressedStream = profileJsonResponse.body.pipeThrough(decompressionStream);
+			const decompressedResponse = new Response(decompressedStream);
+			return decompressedResponse.json();
 		}
 		return profileJsonResponse.json();
 	}
 
-	let v2impl = "basic";
-	let v3impl = "basic";
+	let v2impl = 'basic';
+	let v3impl = 'basic';
 
 	$: size = data.size;
 	$: format = data.format;
-	$: impl = { v1: "basic", v2: v2impl, v3: v3impl }[format] ?? "basic";
+	$: impl = { v1: 'basic', v2: v2impl, v3: v3impl }[format] ?? 'basic';
 	$: profilePromise = fetchProfileJson(size, format);
-
 </script>
 
 <div class="wrapper">
@@ -28,7 +33,7 @@
 		<section>
 			<h2>Format V1: Nested objects</h2>
 			<nav>
-				<a href="/" class:active={$page.url.pathname == "/"}>Small</a>
+				<a href="/" class:active={$page.url.pathname == '/'}>Small</a>
 				<del title="The JSON file would be 800MB big">Medium</del>
 				<del title="The JSON file would be much bigger than a gigabyte">Large</del>
 			</nav>
@@ -42,23 +47,27 @@
 		<section>
 			<h2>Format V2: Arrays of objects, with index references</h2>
 			<nav>
-				<a href="/v2" class:active={$page.url.pathname == "/v2"}>Small</a>
-				<a href="/v2/medium" class:active={$page.url.pathname == "/v2/medium"}>Medium</a>
-				<a href="/v2/large" class:active={$page.url.pathname == "/v2/large"}>Large</a>
+				<a href="/v2" class:active={$page.url.pathname == '/v2'}>Small</a>
+				<a href="/v2/medium" class:active={$page.url.pathname == '/v2/medium'}>Medium</a>
+				<a href="/v2/large" class:active={$page.url.pathname == '/v2/large'}>Large</a>
 			</nav>
 			<h3>Implementation</h3>
 			<ul class="implementation">
 				<li>
-					<label><input type="radio" name="v2impl" bind:group={v2impl} value="basic" checked /> Basic</label>
-				</li>
-				<li>
 					<label
-						><input type="radio" name="v2impl" bind:group={v2impl} value="categoryindexkey" /> Integer keys for category breakdown</label
+						><input type="radio" name="v2impl" bind:group={v2impl} value="basic" checked /> Basic</label
 					>
 				</li>
 				<li>
 					<label
-						><input type="radio" name="v2impl" bind:group={v2impl} value="typedarraymaps" /> Typed arrays instead of maps</label
+						><input type="radio" name="v2impl" bind:group={v2impl} value="categoryindexkey" /> Integer
+						keys for category breakdown</label
+					>
+				</li>
+				<li>
+					<label
+						><input type="radio" name="v2impl" bind:group={v2impl} value="typedarraymaps" /> Typed arrays
+						instead of maps</label
 					>
 				</li>
 			</ul>
@@ -66,24 +75,35 @@
 		<section>
 			<h2>Format V3: Structs of arrays</h2>
 			<nav>
-				<a href="/v3" class:active={$page.url.pathname == "/v3"}>Small</a>
-				<a href="/v3/medium" class:active={$page.url.pathname == "/v3/medium"}>Medium</a>
-				<a href="/v3/large" class:active={$page.url.pathname == "/v3/large"}>Large</a>
+				<a href="/v3" class:active={$page.url.pathname == '/v3'}>Small</a>
+				<a href="/v3/medium" class:active={$page.url.pathname == '/v3/medium'}>Medium</a>
+				<a href="/v3/large" class:active={$page.url.pathname == '/v3/large'}>Large</a>
 			</nav>
 			<h3>Implementation</h3>
 			<ul class="implementation">
 				<li>
-					<label><input type="radio" name="v3impl" bind:group={v3impl} value="basic" checked /> Basic</label>
-				</li>
-				<li>
 					<label
-						><input type="radio" name="v3impl" bind:group={v3impl} value="memoizedsamplecategories" /> Memoized sample categories</label
+						><input type="radio" name="v3impl" bind:group={v3impl} value="basic" checked /> Basic</label
 					>
 				</li>
 				<li>
 					<label
-						><input type="radio" name="v3impl" bind:group={v3impl} value="memoizedtypedarrayinputs" /> Memoized typed array
-						inputs</label
+						><input
+							type="radio"
+							name="v3impl"
+							bind:group={v3impl}
+							value="memoizedsamplecategories"
+						/> Memoized sample categories</label
+					>
+				</li>
+				<li>
+					<label
+						><input
+							type="radio"
+							name="v3impl"
+							bind:group={v3impl}
+							value="memoizedtypedarrayinputs"
+						/> Memoized typed array inputs</label
 					>
 				</li>
 			</ul>
@@ -101,12 +121,12 @@
 	</main>
 </div>
 
-
 <style>
 	.wrapper {
 		display: flex;
 		flex-flow: row nowrap;
-		font-family: system-ui, '-apple-system', BlinkMacSystemFont, 'Segoe UI', Roboto, Ubuntu, 'Helvetica Neue', sans-serif;
+		font-family: system-ui, '-apple-system', BlinkMacSystemFont, 'Segoe UI', Roboto, Ubuntu,
+			'Helvetica Neue', sans-serif;
 		font-size: 14px;
 		line-height: 1.6;
 	}
@@ -116,7 +136,8 @@
 		margin-right: 30px;
 	}
 
-	h2, h3 {
+	h2,
+	h3 {
 		font-size: 1em;
 	}
 
@@ -138,7 +159,8 @@
 		border-bottom: 1px solid #ccc;
 	}
 
-	nav a, nav del {
+	nav a,
+	nav del {
 		flex: 1;
 		text-align: center;
 		padding: 8px;
@@ -150,7 +172,8 @@
 		color: black;
 	}
 
-	nav a:hover, nav a.active {
+	nav a:hover,
+	nav a.active {
 		background: #f4f4f4;
 	}
 
@@ -163,5 +186,4 @@
 		list-style-type: none;
 		padding: 0;
 	}
-
 </style>
