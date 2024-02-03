@@ -1,5 +1,5 @@
 import { ThroughputAccumulator, bisectionLeft } from '$lib';
-import memoizeOne from 'memoize-one';
+import memoize from 'memoize-one';
 
 import type {
 	Stack,
@@ -117,10 +117,25 @@ export function computeCategoryBreakdownBasic(
 	return map;
 }
 
-export function computeCategoryBreakdownWithPrecomputedSampleStacks(
+export function computeCategoryBreakdownWithPrecomputedSampleStacksRegularArray(
 	profile: Profile,
-	sampleCategories: Uint8Array | number[],
-	weightColumn: Float64Array | number[],
+	sampleCategories: number[],
+	weightColumn: number[],
+	range: SampleIndexRange
+): Float64Array {
+	const map = new Float64Array(profile.categories.length);
+	for (let i = range.start; i < range.end; i++) {
+		const weight = weightColumn[i];
+		const categoryIndex = sampleCategories[i];
+		map[categoryIndex] += weight;
+	}
+	return map;
+}
+
+export function computeCategoryBreakdownWithPrecomputedSampleStacksTypedArray(
+	profile: Profile,
+	sampleCategories: Uint8Array,
+	weightColumn: Float64Array,
 	range: SampleIndexRange
 ): Float64Array {
 	const map = new Float64Array(profile.categories.length);
@@ -144,14 +159,37 @@ export function convertCategoryBreakdownTypedArrayToMap(
 	);
 }
 
-function computeHeaviestStackIndexWithTypedArray(
+function computeHeaviestStackIndexWithRegularArrays(
 	stackCount: number,
-	sampleStacks: Int32Array | number[],
-	sampleWeights: Float64Array | number[],
+	sampleStacks: number[],
+	sampleWeights: number[],
 	range: SampleIndexRange
 ): number | null {
 	const { start: rangeStart, end: rangeEnd } = range;
-	const map = new Float32Array(stackCount);
+	const map = new Float64Array(stackCount);
+	let heaviestStackWeight = 0;
+	let heaviestStackIndex: number = -1;
+	for (let i = rangeStart; i < rangeEnd; i++) {
+		const stackIndex = sampleStacks[i];
+		const weight = sampleWeights[i];
+		const stackWeight = map[stackIndex] + weight;
+		map[stackIndex] = stackWeight;
+		if (stackWeight > heaviestStackWeight) {
+			heaviestStackWeight = stackWeight;
+			heaviestStackIndex = stackIndex;
+		}
+	}
+	return heaviestStackIndex === -1 ? null : heaviestStackIndex;
+}
+
+function computeHeaviestStackIndexWithTypedArrays(
+	stackCount: number,
+	sampleStacks: Int32Array,
+	sampleWeights: Float64Array,
+	range: SampleIndexRange
+): number | null {
+	const { start: rangeStart, end: rangeEnd } = range;
+	const map = new Float64Array(stackCount);
 	let heaviestStackWeight = 0;
 	let heaviestStackIndex: number = -1;
 	for (let i = rangeStart; i < rangeEnd; i++) {
@@ -215,7 +253,7 @@ export function makeSelectorsV3Basic(): Selectors {
 			const heaviestStackIndex = heaviestStackThroughputAccumulator.measure(
 				selectedSampleCount,
 				() =>
-					computeHeaviestStackIndexWithTypedArray(
+					computeHeaviestStackIndexWithRegularArrays(
 						profile.stackTable.length,
 						profile.sampleTable.stackIndexColumn,
 						profile.sampleTable.weightColumn,
@@ -240,7 +278,7 @@ export function makeSelectorsV3MemoizedSampleCategories(): Selectors {
 	const categoryBreakdownThroughputAccumulator = new ThroughputAccumulator();
 	const heaviestStackThroughputAccumulator = new ThroughputAccumulator();
 
-	const getSampleCategories = memoizeOne((profile: Profile): number[] => {
+	const getSampleCategories = memoize((profile: Profile): number[] => {
 		const sampleCategories = new Array(profile.sampleTable.length);
 		for (let i = 0; i < sampleCategories.length; i++) {
 			const stackIndex = profile.sampleTable.stackIndexColumn[i];
@@ -265,7 +303,7 @@ export function makeSelectorsV3MemoizedSampleCategories(): Selectors {
 			const categoryBreakdownTypedArray = categoryBreakdownThroughputAccumulator.measure(
 				selectedSampleCount,
 				() =>
-					computeCategoryBreakdownWithPrecomputedSampleStacks(
+					computeCategoryBreakdownWithPrecomputedSampleStacksRegularArray(
 						profile,
 						sampleCategories,
 						profile.sampleTable.weightColumn,
@@ -279,7 +317,7 @@ export function makeSelectorsV3MemoizedSampleCategories(): Selectors {
 			const heaviestStackIndex = heaviestStackThroughputAccumulator.measure(
 				selectedSampleCount,
 				() =>
-					computeHeaviestStackIndexWithTypedArray(
+					computeHeaviestStackIndexWithRegularArrays(
 						profile.stackTable.length,
 						profile.sampleTable.stackIndexColumn,
 						profile.sampleTable.weightColumn,
@@ -304,13 +342,13 @@ export function makeSelectorsV3MemoizedTypedArrayInputs(): Selectors {
 	const categoryBreakdownThroughputAccumulator = new ThroughputAccumulator();
 	const heaviestStackThroughputAccumulator = new ThroughputAccumulator();
 
-	const getSampleStacks = memoizeOne(
+	const getSampleStacks = memoize(
 		(profile: Profile) => new Int32Array(profile.sampleTable.stackIndexColumn)
 	);
-	const getSampleWeights = memoizeOne(
+	const getSampleWeights = memoize(
 		(profile: Profile) => new Float64Array(profile.sampleTable.weightColumn)
 	);
-	const getSampleCategories = memoizeOne((profile: Profile) => {
+	const getSampleCategories = memoize((profile: Profile) => {
 		const sampleStacks = getSampleStacks(profile);
 		const sampleCategories = new Uint8Array(profile.sampleTable.length);
 		for (let i = 0; i < sampleCategories.length; i++) {
@@ -338,7 +376,7 @@ export function makeSelectorsV3MemoizedTypedArrayInputs(): Selectors {
 			const categoryBreakdownTypedArray = categoryBreakdownThroughputAccumulator.measure(
 				selectedSampleCount,
 				() =>
-					computeCategoryBreakdownWithPrecomputedSampleStacks(
+					computeCategoryBreakdownWithPrecomputedSampleStacksTypedArray(
 						profile,
 						sampleCategories,
 						sampleWeights,
@@ -352,7 +390,7 @@ export function makeSelectorsV3MemoizedTypedArrayInputs(): Selectors {
 			const heaviestStackIndex = heaviestStackThroughputAccumulator.measure(
 				selectedSampleCount,
 				() =>
-					computeHeaviestStackIndexWithTypedArray(
+					computeHeaviestStackIndexWithTypedArrays(
 						profile.stackTable.length,
 						sampleStacks,
 						sampleWeights,

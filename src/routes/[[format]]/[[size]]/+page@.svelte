@@ -40,7 +40,7 @@
 			</ul>
 		</section>
 		<section>
-			<h2>Format V2: Multiple arrays of objects, with index references</h2>
+			<h2>Format V2: Arrays of objects, with index references</h2>
 			<nav>
 				<a href="/v2" class:active={$page.url.pathname == "/v2"}>Small</a>
 				<a href="/v2/medium" class:active={$page.url.pathname == "/v2/medium"}>Medium</a>

@@ -205,11 +205,15 @@ export function makeSelectorsV2Basic(): Selectors {
 		): ProfileInfo {
 			const selectedSampleCount = sampleIndexRange.end - sampleIndexRange.start;
 			const total = computeTotal(profile, sampleIndexRange);
-			const categoryBreakdown = categoryBreakdownThroughputAccumulator.measure(selectedSampleCount, () =>
-				computeCategoryBreakdownWithStringKeyMap(profile, sampleIndexRange)
+			const categoryBreakdown = categoryBreakdownThroughputAccumulator.measure(
+				selectedSampleCount,
+				() => computeCategoryBreakdownWithStringKeyMap(profile, sampleIndexRange)
 			);
 			const heaviestStack = heaviestStackThroughputAccumulator.measure(selectedSampleCount, () =>
-				convertStackIndexToStack(profile, computeHeaviestStackIndexWithMap(profile, sampleIndexRange))
+				convertStackIndexToStack(
+					profile,
+					computeHeaviestStackIndexWithMap(profile, sampleIndexRange)
+				)
 			);
 			return {
 				overallSampleCount: profile.samples.length,
@@ -238,11 +242,15 @@ export function makeSelectorsV2CategoryIndexKey(): Selectors {
 		): ProfileInfo {
 			const selectedSampleCount = sampleIndexRange.end - sampleIndexRange.start;
 			const total = computeTotal(profile, sampleIndexRange);
-			const categoryBreakdown = categoryBreakdownThroughputAccumulator.measure(selectedSampleCount, () =>
-				computeCategoryBreakdownWithIndexKeyMap(profile, sampleIndexRange)
+			const categoryBreakdown = categoryBreakdownThroughputAccumulator.measure(
+				selectedSampleCount,
+				() => computeCategoryBreakdownWithIndexKeyMap(profile, sampleIndexRange)
 			);
 			const heaviestStack = heaviestStackThroughputAccumulator.measure(selectedSampleCount, () =>
-				convertStackIndexToStack(profile, computeHeaviestStackIndexWithMap(profile, sampleIndexRange))
+				convertStackIndexToStack(
+					profile,
+					computeHeaviestStackIndexWithMap(profile, sampleIndexRange)
+				)
 			);
 			return {
 				overallSampleCount: profile.samples.length,
@@ -271,11 +279,15 @@ export function makeSelectorsV2TypedArrayMaps(): Selectors {
 		): ProfileInfo {
 			const selectedSampleCount = sampleIndexRange.end - sampleIndexRange.start;
 			const total = computeTotal(profile, sampleIndexRange);
-			const categoryBreakdown = categoryBreakdownThroughputAccumulator.measure(selectedSampleCount, () =>
-				computeCategoryBreakdownWithTypedArray(profile, sampleIndexRange)
+			const categoryBreakdown = categoryBreakdownThroughputAccumulator.measure(
+				selectedSampleCount,
+				() => computeCategoryBreakdownWithTypedArray(profile, sampleIndexRange)
 			);
 			const heaviestStack = heaviestStackThroughputAccumulator.measure(selectedSampleCount, () =>
-				convertStackIndexToStack(profile, computeHeaviestStackIndexWithTypedArray(profile, sampleIndexRange))
+				convertStackIndexToStack(
+					profile,
+					computeHeaviestStackIndexWithTypedArray(profile, sampleIndexRange)
+				)
 			);
 			return {
 				overallSampleCount: profile.samples.length,
