@@ -28,6 +28,12 @@
 	$: profilePromise = fetchProfileJson(size, format);
 </script>
 
+<svelte:head>
+	<title
+		>Mini profiler for FOSDEM 2024 presentation about fast JavaScript with data-oriented design</title
+	>
+</svelte:head>
+
 <div class="wrapper">
 	<aside>
 		<section>

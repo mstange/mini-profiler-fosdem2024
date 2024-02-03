@@ -35,7 +35,7 @@ export type FrameTable = {
 	categoryIndexColumn: number[];
 };
 
-export function computeBaseRange(profile: Profile): TimeRange {
+function computeBaseRange(profile: Profile): TimeRange {
 	const start = profile.sampleTable.timeColumn[0];
 	const end = profile.sampleTable.timeColumn[profile.sampleTable.length - 1];
 	return { start, end };
@@ -66,7 +66,7 @@ function computeProfileGraph(profile: Profile): Float32Array {
 	return graph;
 }
 
-export function convertTimeRangeToSampleIndexRange(
+function convertTimeRangeToSampleIndexRange(
 	profile: Profile,
 	timeRange: TimeRange
 ): SampleIndexRange {
@@ -81,7 +81,7 @@ export function convertTimeRangeToSampleIndexRange(
 	};
 }
 
-export function computeTotalBasic(profile: Profile, range: SampleIndexRange): number {
+function computeTotalBasic(profile: Profile, range: SampleIndexRange): number {
 	let absSum = 0;
 	for (let i = range.start; i < range.end; i++) {
 		const weight = profile.sampleTable.weightColumn[i];
@@ -90,7 +90,7 @@ export function computeTotalBasic(profile: Profile, range: SampleIndexRange): nu
 	return absSum;
 }
 
-export function computeTotalTypedArray(
+function computeTotalTypedArray(
 	weightColumn: Float64Array,
 	range: SampleIndexRange
 ): number {
@@ -102,7 +102,7 @@ export function computeTotalTypedArray(
 	return absSum;
 }
 
-export function computeCategoryBreakdownBasic(
+function computeCategoryBreakdownBasic(
 	profile: Profile,
 	range: SampleIndexRange
 ): Float64Array {
@@ -117,7 +117,7 @@ export function computeCategoryBreakdownBasic(
 	return map;
 }
 
-export function computeCategoryBreakdownWithPrecomputedSampleStacksRegularArray(
+function computeCategoryBreakdownWithPrecomputedSampleStacksRegularArray(
 	profile: Profile,
 	sampleCategories: number[],
 	weightColumn: number[],
@@ -132,7 +132,7 @@ export function computeCategoryBreakdownWithPrecomputedSampleStacksRegularArray(
 	return map;
 }
 
-export function computeCategoryBreakdownWithPrecomputedSampleStacksTypedArray(
+function computeCategoryBreakdownWithPrecomputedSampleStacksTypedArray(
 	profile: Profile,
 	sampleCategories: Uint8Array,
 	weightColumn: Float64Array,
@@ -147,7 +147,7 @@ export function computeCategoryBreakdownWithPrecomputedSampleStacksTypedArray(
 	return map;
 }
 
-export function convertCategoryBreakdownTypedArrayToMap(
+function convertCategoryBreakdownTypedArrayToMap(
 	profile: Profile,
 	categoryBreakdown: Float64Array
 ): CategoryBreakdown {
@@ -206,7 +206,7 @@ function computeHeaviestStackIndexWithTypedArrays(
 }
 
 // Convert stack index into an array of frames.
-export function convertStackIndexToStack(profile: Profile, stackIndex: number | null): Stack {
+function convertStackIndexToStack(profile: Profile, stackIndex: number | null): Stack {
 	const stack: Stack = [];
 	let currentStackIndex = stackIndex;
 	while (currentStackIndex !== null) {

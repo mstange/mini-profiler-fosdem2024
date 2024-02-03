@@ -103,7 +103,7 @@ export function computeCategoryBreakdownWithStringKeyMap(
 export function computeCategoryBreakdownWithIndexKeyMap(
 	profile: Profile,
 	range: SampleIndexRange
-): CategoryBreakdown {
+): Map<number, number> {
 	const map = new Map();
 	for (let i = range.start; i < range.end; i++) {
 		const { stackIndex, weight } = profile.samples[i];
@@ -111,15 +111,25 @@ export function computeCategoryBreakdownWithIndexKeyMap(
 		const categoryIndex = profile.frames[frameIndex].categoryIndex;
 		map.set(categoryIndex, (map.get(categoryIndex) || 0) + weight);
 	}
+	return map;
+}
+
+function convertCategoryBreakdownIndexMapToNameMap(
+	profile: Profile,
+	categoryBreakdown: Map<number, number>
+): CategoryBreakdown {
 	return new Map(
-		[...map.entries()].map(([categoryIndex, weight]) => [profile.categories[categoryIndex], weight])
+		[...categoryBreakdown.entries()].map(([categoryIndex, weight]) => [
+			profile.categories[categoryIndex],
+			weight
+		])
 	);
 }
 
 export function computeCategoryBreakdownWithTypedArray(
 	profile: Profile,
 	range: SampleIndexRange
-): CategoryBreakdown {
+): Float64Array {
 	const map = new Float64Array(profile.categories.length);
 	for (let i = range.start; i < range.end; i++) {
 		const { stackIndex, weight } = profile.samples[i];
@@ -127,8 +137,18 @@ export function computeCategoryBreakdownWithTypedArray(
 		const categoryIndex = profile.frames[frameIndex].categoryIndex;
 		map[categoryIndex] += weight;
 	}
+	return map;
+}
+
+function convertCategoryBreakdownTypedArrayToMap(
+	profile: Profile,
+	categoryBreakdown: Float64Array | number[]
+): CategoryBreakdown {
 	return new Map(
-		[...map.entries()].map(([categoryIndex, weight]) => [profile.categories[categoryIndex], weight])
+		[...categoryBreakdown.entries()].map(([categoryIndex, weight]) => [
+			profile.categories[categoryIndex],
+			weight
+		])
 	);
 }
 
@@ -242,9 +262,13 @@ export function makeSelectorsV2CategoryIndexKey(): Selectors {
 		): ProfileInfo {
 			const selectedSampleCount = sampleIndexRange.end - sampleIndexRange.start;
 			const total = computeTotal(profile, sampleIndexRange);
-			const categoryBreakdown = categoryBreakdownThroughputAccumulator.measure(
+			const categoryBreakdownWithIndexes = categoryBreakdownThroughputAccumulator.measure(
 				selectedSampleCount,
 				() => computeCategoryBreakdownWithIndexKeyMap(profile, sampleIndexRange)
+			);
+			const categoryBreakdown = convertCategoryBreakdownIndexMapToNameMap(
+				profile,
+				categoryBreakdownWithIndexes
 			);
 			const heaviestStack = heaviestStackThroughputAccumulator.measure(selectedSampleCount, () =>
 				convertStackIndexToStack(
@@ -279,16 +303,19 @@ export function makeSelectorsV2TypedArrayMaps(): Selectors {
 		): ProfileInfo {
 			const selectedSampleCount = sampleIndexRange.end - sampleIndexRange.start;
 			const total = computeTotal(profile, sampleIndexRange);
-			const categoryBreakdown = categoryBreakdownThroughputAccumulator.measure(
+			const categoryBreakdownTypedArray = categoryBreakdownThroughputAccumulator.measure(
 				selectedSampleCount,
 				() => computeCategoryBreakdownWithTypedArray(profile, sampleIndexRange)
 			);
-			const heaviestStack = heaviestStackThroughputAccumulator.measure(selectedSampleCount, () =>
-				convertStackIndexToStack(
-					profile,
-					computeHeaviestStackIndexWithTypedArray(profile, sampleIndexRange)
-				)
+			const categoryBreakdown = convertCategoryBreakdownTypedArrayToMap(
+				profile,
+				categoryBreakdownTypedArray
 			);
+			const heaviestStackIndex = heaviestStackThroughputAccumulator.measure(
+				selectedSampleCount,
+				() => computeHeaviestStackIndexWithTypedArray(profile, sampleIndexRange)
+			);
+			const heaviestStack = convertStackIndexToStack(profile, heaviestStackIndex);
 			return {
 				overallSampleCount: profile.samples.length,
 				selectedSampleCount,
