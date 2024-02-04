@@ -1,18 +1,10 @@
-# create-svelte
+# mini-profiler-fosdem2024
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/main/packages/create-svelte).
+This is an example project which I built to go along with my FOSDEM presentation [Writing fast JavaScript with Data-Oriented Design](https://fosdem.org/2024/schedule/event/fosdem-2024-2773-writing-fast-javascript-with-data-oriented-design/).
 
-## Creating a project
+[Presentation slides](https://docs.google.com/presentation/d/1yn87uVuB7oXmRX5uMsdu9_DQP7M5a2jO2xKuRl1ERIo/edit?usp=sharing)
 
-If you're seeing this, you've probably already done this step. Congrats!
-
-```bash
-# create a new project in the current directory
-npm create svelte@latest
-
-# create a new project in my-app
-npm create svelte@latest my-app
-```
+It's a SvelteKit project, created by [`create-svelte`](https://github.com/sveltejs/kit/tree/main/packages/create-svelte).
 
 ## Developing
 
@@ -25,14 +17,6 @@ npm run dev
 npm run dev -- --open
 ```
 
-## Building
+## License
 
-To create a production version of your app:
-
-```bash
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+MIT
