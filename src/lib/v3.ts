@@ -90,10 +90,7 @@ function computeTotalBasic(profile: Profile, range: SampleIndexRange): number {
 	return absSum;
 }
 
-function computeTotalTypedArray(
-	weightColumn: Float64Array,
-	range: SampleIndexRange
-): number {
+function computeTotalTypedArray(weightColumn: Float64Array, range: SampleIndexRange): number {
 	let absSum = 0;
 	for (let i = range.start; i < range.end; i++) {
 		const weight = weightColumn[i];
@@ -102,10 +99,7 @@ function computeTotalTypedArray(
 	return absSum;
 }
 
-function computeCategoryBreakdownBasic(
-	profile: Profile,
-	range: SampleIndexRange
-): Float64Array {
+function computeCategoryBreakdownBasic(profile: Profile, range: SampleIndexRange): Float64Array {
 	const map = new Float64Array(profile.categories.length);
 	for (let i = range.start; i < range.end; i++) {
 		const stackIndex = profile.sampleTable.stackIndexColumn[i];
@@ -117,22 +111,21 @@ function computeCategoryBreakdownBasic(
 	return map;
 }
 
-function computeCategoryBreakdownWithPrecomputedSampleStacksRegularArray(
+function computeCategoryBreakdownWithPrecomputedSampleCategoriesRegularArray(
 	profile: Profile,
 	sampleCategories: number[],
-	weightColumn: number[],
 	range: SampleIndexRange
 ): Float64Array {
 	const map = new Float64Array(profile.categories.length);
 	for (let i = range.start; i < range.end; i++) {
-		const weight = weightColumn[i];
+		const weight = profile.sampleTable.weightColumn[i];
 		const categoryIndex = sampleCategories[i];
 		map[categoryIndex] += weight;
 	}
 	return map;
 }
 
-function computeCategoryBreakdownWithPrecomputedSampleStacksTypedArray(
+function computeCategoryBreakdownWithPrecomputedSampleCategoriesTypedArray(
 	profile: Profile,
 	sampleCategories: Uint8Array,
 	weightColumn: Float64Array,
@@ -159,19 +152,13 @@ function convertCategoryBreakdownTypedArrayToMap(
 	);
 }
 
-function computeHeaviestStackIndexWithRegularArrays(
-	stackCount: number,
-	sampleStacks: number[],
-	sampleWeights: number[],
-	range: SampleIndexRange
-): number | null {
-	const { start: rangeStart, end: rangeEnd } = range;
-	const map = new Float64Array(stackCount);
+function computeHeaviestStackIndexBasic(profile: Profile, range: SampleIndexRange): number | null {
+	const map = new Float64Array(profile.stackTable.length);
 	let heaviestStackWeight = 0;
-	let heaviestStackIndex: number = -1;
-	for (let i = rangeStart; i < rangeEnd; i++) {
-		const stackIndex = sampleStacks[i];
-		const weight = sampleWeights[i];
+	let heaviestStackIndex: number | null = null;
+	for (let i = range.start; i < range.end; i++) {
+		const stackIndex = profile.sampleTable.stackIndexColumn[i];
+		const weight = profile.sampleTable.weightColumn[i];
 		const stackWeight = map[stackIndex] + weight;
 		map[stackIndex] = stackWeight;
 		if (stackWeight > heaviestStackWeight) {
@@ -179,7 +166,7 @@ function computeHeaviestStackIndexWithRegularArrays(
 			heaviestStackIndex = stackIndex;
 		}
 	}
-	return heaviestStackIndex === -1 ? null : heaviestStackIndex;
+	return heaviestStackIndex;
 }
 
 function computeHeaviestStackIndexWithTypedArrays(
@@ -188,11 +175,10 @@ function computeHeaviestStackIndexWithTypedArrays(
 	sampleWeights: Float64Array,
 	range: SampleIndexRange
 ): number | null {
-	const { start: rangeStart, end: rangeEnd } = range;
 	const map = new Float64Array(stackCount);
 	let heaviestStackWeight = 0;
-	let heaviestStackIndex: number = -1;
-	for (let i = rangeStart; i < rangeEnd; i++) {
+	let heaviestStackIndex: number | null = null;
+	for (let i = range.start; i < range.end; i++) {
 		const stackIndex = sampleStacks[i];
 		const weight = sampleWeights[i];
 		const stackWeight = map[stackIndex] + weight;
@@ -202,7 +188,7 @@ function computeHeaviestStackIndexWithTypedArrays(
 			heaviestStackIndex = stackIndex;
 		}
 	}
-	return heaviestStackIndex === -1 ? null : heaviestStackIndex;
+	return heaviestStackIndex;
 }
 
 // Convert stack index into an array of frames.
@@ -252,13 +238,7 @@ export function makeSelectorsV3Basic(): Selectors {
 			);
 			const heaviestStackIndex = heaviestStackThroughputAccumulator.measure(
 				selectedSampleCount,
-				() =>
-					computeHeaviestStackIndexWithRegularArrays(
-						profile.stackTable.length,
-						profile.sampleTable.stackIndexColumn,
-						profile.sampleTable.weightColumn,
-						sampleIndexRange
-					)
+				() => computeHeaviestStackIndexBasic(profile, sampleIndexRange)
 			);
 			const heaviestStack = convertStackIndexToStack(profile, heaviestStackIndex);
 			return {
@@ -303,10 +283,9 @@ export function makeSelectorsV3MemoizedSampleCategories(): Selectors {
 			const categoryBreakdownTypedArray = categoryBreakdownThroughputAccumulator.measure(
 				selectedSampleCount,
 				() =>
-					computeCategoryBreakdownWithPrecomputedSampleStacksRegularArray(
+					computeCategoryBreakdownWithPrecomputedSampleCategoriesRegularArray(
 						profile,
 						sampleCategories,
-						profile.sampleTable.weightColumn,
 						sampleIndexRange
 					)
 			);
@@ -316,13 +295,7 @@ export function makeSelectorsV3MemoizedSampleCategories(): Selectors {
 			);
 			const heaviestStackIndex = heaviestStackThroughputAccumulator.measure(
 				selectedSampleCount,
-				() =>
-					computeHeaviestStackIndexWithRegularArrays(
-						profile.stackTable.length,
-						profile.sampleTable.stackIndexColumn,
-						profile.sampleTable.weightColumn,
-						sampleIndexRange
-					)
+				() => computeHeaviestStackIndexBasic(profile, sampleIndexRange)
 			);
 			const heaviestStack = convertStackIndexToStack(profile, heaviestStackIndex);
 			return {
@@ -376,7 +349,7 @@ export function makeSelectorsV3MemoizedTypedArrayInputs(): Selectors {
 			const categoryBreakdownTypedArray = categoryBreakdownThroughputAccumulator.measure(
 				selectedSampleCount,
 				() =>
-					computeCategoryBreakdownWithPrecomputedSampleStacksTypedArray(
+					computeCategoryBreakdownWithPrecomputedSampleCategoriesTypedArray(
 						profile,
 						sampleCategories,
 						sampleWeights,
